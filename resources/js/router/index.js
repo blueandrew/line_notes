@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import Home from '../components/HomeComponent.vue';
+import NotesList from '../page/NotesListComponent.vue';
 import error_404 from '../page/404.vue';
 
 const routers = [
     {
         path: '/',
-        name: 'home',
-        component: Home,
+        name: 'NotesList',
+        component: NotesList,
         children: []
     },
     {
