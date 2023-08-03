@@ -12,7 +12,7 @@
                             <button class="col-auto btn btn-primary mx-1" :disabled="isDisabled" @click="copyUrl(item.url)">複製網址</button>
                         </div>
                         <div class="align-items-center d-flex">
-                            <button class="col-auto btn btn-primary mx-1" data-bs-toggle="modal" data-bs-target="#staticBackdrop" :disabled="isDisabled" @click="changeSwapModalFormIdx(1, item)">修改</button>
+                            <button class="col-auto btn btn-primary mx-1" data-bs-toggle="modal" data-bs-target="#inputFormModal" :disabled="isDisabled" @click="changeSwapModalFormIdx('edit', item)">修改</button>
                         </div>
                         <div class="align-items-center d-flex">
                             <button class="col-auto btn btn-primary mx-1" :disabled="isDisabled" @click="removeList(item)">刪除</button>
@@ -22,13 +22,9 @@
             </ul>
         </div>
 
-        <button class="position-fixed bottom-0 end-0 m-5 col-auto btn btn-primary btn-lg rounded-circle" data-bs-toggle="modal" data-bs-target="#staticBackdrop" :disabled="isDisabled" @click="changeSwapModalFormIdx(0, item)">+</button>
+        <button class="position-fixed bottom-0 end-0 m-5 col-auto btn btn-primary btn-lg rounded-circle" data-bs-toggle="modal" data-bs-target="#inputFormModal" :disabled="isDisabled" @click="changeSwapModalFormIdx('add', item)">+</button>
 
-        <ModalComponent>
-            <template #modalForm>
-                <component :is="swapModalForm[swapModalFormIdx]['component']" @formFn="swapModalForm[swapModalFormIdx]['formFn']" :dataItem="dataItem"></component>
-            </template>
-        </ModalComponent>
+        <FormModal :modalTitle="swapModalTitle" :swapModalType="swapModalType" @formFn="swapModalForm[swapModalType]['formFn']" :dataItem="dataItem"/>
     </div>
 </template>
 
@@ -36,10 +32,10 @@
     import { ref, reactive, onMounted } from 'vue'
 
     import indexedDBMethods from '@/api/indexedDBMethods'
-    import ModalComponent from '@/components/modal/ModalComponent.vue'
-    import NotesListAdd from '@/components/modal/form/NotesListAdd.vue'
-    import NotesListEdit from '@/components/modal/form/NotesListEdit.vue'
+    import FormModal from'@/components/modal/FormModal.vue'
 
+
+    let db
     const dbName = 'notes';
     const storeName = 'notesList';
     const initialDataItem = {
@@ -49,34 +45,34 @@
         'completed': false
     };
 
-    let db
     const modal = reactive({});
 
     let isDisabled = ref(false);
     let notesList = reactive([]);
     let dataItem = reactive({ ...initialDataItem });
 
-    const swapModalForm = [
-        {
-            'component': NotesListAdd,
+    const swapModalForm = {
+        "add": {
+            'modalTitle': '新增',
             'formFn': addList
         },
-        {
-            'component': NotesListEdit,
+        "edit": {
+            'modalTitle': '修改', 
             'formFn': editData
         }
-    ];
-    let swapModalFormIdx = ref(0);
-
+    };
+    let swapModalType = ref('add')
+    let swapModalTitle = ref(swapModalForm['add']['modalTitle']);
 
     onMounted(()=> {
-        modal.value = new bootstrap.Modal('#staticBackdrop', {});
-
+        modal.value = new bootstrap.Modal('#inputFormModal', {});
+        
         loadDB();
     })
     
-    function changeSwapModalFormIdx(idx, item) {
-        swapModalFormIdx.value = idx;
+    function changeSwapModalFormIdx(type, item) {
+        swapModalTitle.value = swapModalForm[type]['modalTitle'];
+        swapModalType.value = type;
 
         Object.assign(dataItem, item);
     }
@@ -93,13 +89,20 @@
         notesList.push(...resultData);
     }
 
-    async function addList(addDataItem) {
+    async function addList(item) {
+        modal.value.hide()
+        let addData = {
+            'title': item.title,
+            'url': item.url,
+            'completed': false
+        };
+
         isDisabled.value = true;
 
-        await indexedDBMethods.installData(db, storeName, addDataItem);
+        await indexedDBMethods.installData(db, storeName, addData);
 
         loadData();
-        cancelEdit();
+        cleanFromModal();
     }
 
     async function removeList(item) {
@@ -119,10 +122,10 @@
         await indexedDBMethods.updateDBData(db, storeName, item.id, updateData);
 
         loadData();
-        cancelEdit();
+        cleanFromModal();
     }
 
-    function cancelEdit() {
+    function cleanFromModal() {
         isDisabled.value = false;
         
         Object.assign(dataItem, initialDataItem);
