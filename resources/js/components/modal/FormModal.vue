@@ -1,11 +1,13 @@
 <template>
+    <!-- <button class="" data-bs-toggle="modal" data-bs-target="#inputFormModal"></button> -->
+
     <div class="modal fade" id="inputFormModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="inputFormModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <form @submit.prevent="handelChangeData">
                         <div class="modal-header">
                             <h5 class="modal-title" id="inputFormModalLabel">{{ modalTitle }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="resetForm"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-3">
@@ -18,7 +20,7 @@
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="cancelEdit">關閉</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="resetForm">關閉</button>
                             <button type="submit" class="btn btn-primary" v-if="swapModalType=='add'">{{ modalTitle }}</button>
                             <button type="submit" class="btn btn-primary" v-if="swapModalType=='edit'">{{ modalTitle }}</button>
                         </div>
@@ -29,7 +31,7 @@
 </template>
 
 <script setup>
-    import { toRefs, defineEmits, defineProps } from 'vue'
+    import { reactive, toRefs, onMounted } from 'vue'
     
 
     const emit = defineEmits(['formFn']);
@@ -38,8 +40,20 @@
         modalTitle: String,
         swapModalType: String
     });
-
     const { modalTitle, swapModalType, dataItem } = toRefs(props);
+
+    const modal = reactive({});
+    const modalClose = () => {
+        modal.value.hide()
+    }
+
+    defineExpose({
+        modalClose
+    });
+
+    onMounted(()=> {
+        modal.value = new bootstrap.Modal('#inputFormModal', {});
+    })
 
     function handelChangeData() {
         if(!dataItem.value.title || !dataItem.value.url) {
@@ -48,5 +62,12 @@
 
         emit('formFn', dataItem.value);
     }
+
+    function resetForm() {
+        dataItem.value.title = ''
+        dataItem.value.url = ''
+    }
+
+    
 
 </script>

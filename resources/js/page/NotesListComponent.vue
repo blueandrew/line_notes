@@ -24,7 +24,7 @@
 
         <button class="position-fixed bottom-0 end-0 m-5 col-auto btn btn-primary btn-lg rounded-circle" data-bs-toggle="modal" data-bs-target="#inputFormModal" :disabled="isDisabled" @click="changeSwapModalFormIdx('add', item)">+</button>
 
-        <FormModal :modalTitle="swapModalTitle" :swapModalType="swapModalType" @formFn="swapModalForm[swapModalType]['formFn']" :dataItem="dataItem"/>
+        <FormModal ref="modalObj" :modalTitle="swapModalTitle" :swapModalType="swapModalType" @formFn="swapModalForm[swapModalType]['formFn']" :dataItem="dataItem"/>
     </div>
 </template>
 
@@ -45,7 +45,7 @@
         'completed': false
     };
 
-    const modal = reactive({});
+    const modalObj = ref(null)
 
     let isDisabled = ref(false);
     let notesList = reactive([]);
@@ -65,7 +65,7 @@
     let swapModalTitle = ref(swapModalForm['add']['modalTitle']);
 
     onMounted(()=> {
-        modal.value = new bootstrap.Modal('#inputFormModal', {});
+        // modal.value = new bootstrap.Modal('#inputFormModal', {});
         
         loadDB();
     })
@@ -90,7 +90,7 @@
     }
 
     async function addList(item) {
-        modal.value.hide()
+        modalObj.value.modalClose()
         let addData = {
             'title': item.title,
             'url': item.url,
@@ -130,7 +130,7 @@
         
         Object.assign(dataItem, initialDataItem);
 
-        modal.value.hide()
+        modalObj.value.modalClose()
     }
 
     function copyUrl(url){
