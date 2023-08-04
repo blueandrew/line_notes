@@ -25,6 +25,8 @@
         <button class="position-fixed bottom-0 end-0 m-5 col-auto btn btn-primary btn-lg rounded-circle" data-bs-toggle="modal" data-bs-target="#inputFormModal" :disabled="isDisabled" @click="changeSwapModalFormIdx('add', item)">+</button>
 
         <FormModal ref="modalObj" :modalTitle="swapModalTitle" :swapModalType="swapModalType" @formFn="swapModalForm[swapModalType]['formFn']" :dataItem="dataItem"/>
+        
+        <MsgToasts ref="msgToastsObj" :toastsMsg="toastsMsg"/>
     </div>
 </template>
 
@@ -33,6 +35,7 @@
 
     import indexedDBMethods from '@/api/indexedDBMethods'
     import FormModal from'@/components/modal/FormModal.vue'
+    import MsgToasts from'@/components/toasts/msgToasts.vue'
 
 
     let db
@@ -46,6 +49,7 @@
     };
 
     const modalObj = ref(null)
+    const msgToastsObj = ref(null)
 
     let isDisabled = ref(false);
     let notesList = reactive([]);
@@ -63,10 +67,9 @@
     };
     let swapModalType = ref('add')
     let swapModalTitle = ref(swapModalForm['add']['modalTitle']);
+    let toastsMsg = ref('');
 
-    onMounted(()=> {
-        // modal.value = new bootstrap.Modal('#inputFormModal', {});
-        
+    onMounted(()=> {        
         loadDB();
     })
     
@@ -78,19 +81,33 @@
     }
 
     async function loadDB() {
-        db = await indexedDBMethods.initiate(dbName, storeName);
-
-        loadData();
+        const result = await indexedDBMethods.initiate(dbName, storeName);
+        if (result.success) {
+            db = result.response.data.db;
+            loadData();
+        } else {
+            toastsMsg.value = result.errors.message;
+            msgToastsObj.value.toastShow();
+        }
+        
     }
     
     async function loadData() {
-        let resultData = JSON.parse(await indexedDBMethods.getData(db, storeName));
-        notesList.length = 0;
-        notesList.push(...resultData);
+        const result = await indexedDBMethods.getData(db, storeName);
+        if (result.success) {
+            const resultData = JSON.parse(result.response.data);
+
+            notesList.length = 0;
+            notesList.push(...resultData);
+        } else {
+            notesList.length = 0;
+
+            toastsMsg.value = result.errors.message;
+            msgToastsObj.value.toastShow();
+        }
     }
 
     async function addList(item) {
-        modalObj.value.modalClose()
         let addData = {
             'title': item.title,
             'url': item.url,
@@ -99,16 +116,29 @@
 
         isDisabled.value = true;
 
-        await indexedDBMethods.installData(db, storeName, addData);
-
+        const result = await indexedDBMethods.installData(db, storeName, addData);
+        if (result.success) {
+            toastsMsg.value = "新增成功";
+            
+        } else {
+            toastsMsg.value = result.errors.message;
+        }
+        msgToastsObj.value.toastShow();
+        
         loadData();
         cleanFromModal();
     }
 
     async function removeList(item) {
-        indexedDBMethods.deleteData(db, storeName, item.id);
+        const result = await indexedDBMethods.deleteData(db, storeName, item.id);
+        if (result.success) {
+            toastsMsg.value = "刪除成功";
+        } else {
+            toastsMsg.value = result.errors.message;
+        }
 
-        loadData()              
+        msgToastsObj.value.toastShow();
+        loadData();           
     }
 
     async function editData(item) {
@@ -119,8 +149,14 @@
             'completed': item.completed
         };
 
-        await indexedDBMethods.updateDBData(db, storeName, item.id, updateData);
+        const result = await indexedDBMethods.updateDBData(db, storeName, item.id, updateData);
+        if (result.success) {
+            toastsMsg.value = "修改成功";
+        } else {
+            toastsMsg.value = result.errors.message;
+        }
 
+        msgToastsObj.value.toastShow();
         loadData();
         cleanFromModal();
     }
@@ -136,9 +172,10 @@
     function copyUrl(url){
         navigator.clipboard.writeText(url)
         .then(() => {
-            console.log("success")
+            toastsMsg.value = "複製成功";
         }).catch(() => {
-            console.log("fail")
-    }   )
+            toastsMsg.value = "catch";
+        })
+        msgToastsObj.value.toastShow();
     }
 </script>
