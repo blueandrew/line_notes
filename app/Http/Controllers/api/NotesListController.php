@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Config; 
 
 use App\Http\Resources\ResponsesResource;
 
@@ -27,7 +28,7 @@ class NotesListController extends Controller
         ];
 
         $checkUrl = $request->url;
-        $apiKey = "AIzaSyBIEalf4ftbapfYoO3hRiOuec0si3q0Z0o";
+        $apiKey = config('googleSafeBrowsing.google_safe_browsing_api_key');
         $checkResponse = Http::accept('application/json')
             ->post("https://safebrowsing.googleapis.com/v4/threatMatches:find?key=$apiKey", [
                 "client" => [
@@ -44,18 +45,26 @@ class NotesListController extends Controller
                 ]
             ]);
     
+        $StatusCode = $checkResponse->getStatusCode();
         $checkJsonData = $checkResponse->json();
 
-        if($checkJsonData == []) {
-            $data['success'] = true;
+        if($StatusCode==200) {
+            if($checkJsonData == []) {
+                $data['success'] = true;
+            }else{
+                $threatType = $checkJsonData['matches'][0]['threatType'];
+                $platformType = $checkJsonData['matches'][0]['platformType'];
+    
+                $data['success'] = false;
+                $data['errors']['code'] = 4001;
+                $data['errors']['message'] = "threatType: $threatType, platformType: $platformType";
+            }
         }else{
-            $threatType = $checkJsonData['matches'][0]['threatType'];
-            $platformType = $checkJsonData['matches'][0]['platformType'];
-
             $data['success'] = false;
-            $data['errors']['code'] = 4001;
-            $data['errors']['message'] = "threatType: $threatType, platformType: $platformType";
+                $data['errors']['code'] = 500;
+                $data['errors']['message'] = "Api server error code: $StatusCode";
         }
+        
 
         return response()->json($data, 200);
     }
