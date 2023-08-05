@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Http\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config; 
 
-use App\Http\Resources\ResponsesResource;
+
 
 class NotesListController extends Controller
 {

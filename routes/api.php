@@ -19,4 +19,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::post('/checkUrlSecurity', [App\Http\Controllers\api\NotesListController::class, 'checkUrlSecurity']);
+Route::post('/checkUrlSecurity', [App\Http\Api\NotesListController::class, 'checkUrlSecurity']);

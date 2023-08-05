@@ -34,6 +34,7 @@
     import { ref, reactive, onMounted } from 'vue'
 
     import indexedDBMethods from '@/api/indexedDBMethods'
+    import apiMethods from '@/api/apiMethods'
     import FormModal from'@/components/modal/FormModal.vue'
     import MsgToasts from'@/components/toasts/msgToasts.vue'
 
@@ -108,6 +109,19 @@
     }
 
     async function addList(item) {
+        const checkInfo = await apiMethods.checkUrlSecurity(item.url)
+        if (!checkInfo['success']) {
+            if (checkInfo['errors']['code'] === 4001) {
+                toastsMsg.value = checkInfo['errors']['message'];
+            }else{
+                toastsMsg.value = `error code ${checkInfo['errors']['code']}`;
+            }
+
+            msgToastsObj.value.toastShow();
+            cleanFromModal();
+            return
+        }
+
         let addData = {
             'title': item.title,
             'url': item.url,
