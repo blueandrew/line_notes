@@ -6,28 +6,34 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config; 
-
+use App\Common\response\HttpResult;
 
 
 class NotesListController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function checkUrlSecurity(Request $request)
     {
-        $data = [
-            'success' => false,
-            'response' => [
-                'data'=> '',
-            ],
-            'errors' => [
-                'code' => 0,
-                'message' => ''
-            ]
-        ];
+        $regexPattern = "/^((ht|f)tps?):\/\/[\w\-]+(\.[\w\-]+)+([\w\-.,@?^=%&:\/~+#]*[\w\-@?^=%&\/~+#])?$/";
+        $returnCode = 200;
+        $returnMessage = '';
+        $data = '';
 
         $checkUrl = $request->url;
+
+        if(empty($checkUrl)){
+            $returnCode = 400;
+            $returnMessage = '參數錯誤';
+
+            return HttpResult::error($returnCode, $returnMessage);
+        }
+
+        if(!preg_match($regexPattern, $checkUrl)){
+            $returnCode = 400;
+            $returnMessage = '參數格式錯誤';
+
+            return HttpResult::error($returnCode, $returnMessage);
+        }
+
         $apiKey = config('googleSafeBrowsing.google_safe_browsing_api_key');
         $checkResponse = Http::accept('application/json')
             ->post("https://safebrowsing.googleapis.com/v4/threatMatches:find?key=$apiKey", [
@@ -45,27 +51,22 @@ class NotesListController extends Controller
                 ]
             ]);
     
-        $StatusCode = $checkResponse->getStatusCode();
-        $checkJsonData = $checkResponse->json();
+        $statusCode = $checkResponse->getStatusCode();
+        $checkUrlData = $checkResponse->json();
 
-        if($StatusCode==200) {
-            if($checkJsonData == []) {
-                $data['success'] = true;
-            }else{
-                $threatType = $checkJsonData['matches'][0]['threatType'];
-                $platformType = $checkJsonData['matches'][0]['platformType'];
-    
-                $data['success'] = false;
-                $data['errors']['code'] = 4001;
-                $data['errors']['message'] = "threatType: $threatType, platformType: $platformType";
+        if($statusCode==200) {
+            if($checkUrlData != []) {
+                $threatType = $checkUrlData['matches'][0]['threatType'];
+                $platformType = $checkUrlData['matches'][0]['platformType'];
+                $data = '危險類型: '.$threatType.', 平台類型: '.$platformType;
             }
-        }else{
-            $data['success'] = false;
-                $data['errors']['code'] = 500;
-                $data['errors']['message'] = "Api server error code: $StatusCode";
-        }
-        
 
-        return response()->json($data, 200);
+            return HttpResult::success($data);
+        }else{
+            $returnCode = $statusCode;
+            $returnMessage = 'Api 錯誤. 錯誤代碼: '.$statusCode;
+
+            return HttpResult::error($returnCode, $returnMessage);
+        }
     }
 }

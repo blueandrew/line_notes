@@ -11,12 +11,12 @@
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="title=text" class="col-form-label">標題:</label>
+                            <label for="title-text" class="col-form-label">標題:</label>
                             <input type="text" class="form-control" id="title-text" v-model="dataItem.title" required>
                         </div>
                         <div class="mb-3">
                             <label for="url-text" class="col-form-label">鏈結:</label>
-                            <input type="text" class="form-control" id="url-text" v-model="dataItem.url" required>
+                            <input type="url" class="form-control" id="url-text" v-model="dataItem.url" required>
                         </div>
                     </div>
                     <div class="modal-footer">

@@ -20,3 +20,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 
 Route::post('/checkUrlSecurity', [App\Http\Api\NotesListController::class, 'checkUrlSecurity']);
+
+Route::post('/test', [App\Http\Api\NotesListController::class, 'test']);
